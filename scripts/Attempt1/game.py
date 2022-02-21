@@ -2,6 +2,7 @@
 import random, simplegui
 from user305_o32FtUyCKk_0 import Vector
 
+
 CANVAS_WIDTH = 600
 CANVAS_HEIGHT = 400
 
@@ -61,11 +62,12 @@ class Ball:
                            self.color)
         
 class Interaction:
-    def __init__(self, balls,walls):
+    def __init__(self, balls,walls, background_image):
         self.balls = balls
         self.in_collision = set()
         self.walls = walls
         self.in_wall_collision = False
+        self.background_image = simplegui.load_image(background_image)
         
         
     def hit(self, b1, b2):
@@ -119,6 +121,7 @@ class Interaction:
     
     def draw(self, canvas):
         self.update()
+        canvas.draw_image(self.background_image, (1440/2, 900/2), (1440, 900), (300, 200), (600, 400))
         for wall in self.walls:
             wall.draw(canvas)
         for ball in self.balls:
@@ -149,9 +152,14 @@ def rand_ball():
                 rand_vel(),
                 rand_rad(),
                 rand_col())
+
+
+background_image = "https://img001.prntscr.com/file/img001/dW-nfqX4T_OmcM7QMKgJCQ.png"
+
+
 Walls = [Wall(CANVAS_WIDTH, 5, 'red',"Right"),Wall(0, 5, 'red',"Left")]
 
-balls = [ Ball(Vector(300,200), Vector(3,2),20,'Green', Walls),
+balls = [ Ball(Vector(300,200), Vector(3,2),20,'White', Walls),
          Ball(Vector(0,200),Vector(0,0),20,'Red', Walls),
           Ball(Vector(600,200),Vector(0,0),20,'Red',Walls),
           Ball(Vector(300,100),Vector(0,0),20,'Red',Walls),
@@ -164,7 +172,7 @@ balls = [ Ball(Vector(300,200), Vector(3,2),20,'Green', Walls),
          Ball(Vector(450,400),Vector(0,0),10,'Pink',Walls),
         Ball(Vector(500,400),Vector(0,0),10,'Blue',Walls),
           Ball(Vector(540,300),Vector(0,0),20,'Pink',Walls),]
-interaction = Interaction(balls,Walls)
+interaction = Interaction(balls,Walls,background_image)
 
 frame = simplegui.create_frame("Balls", CANVAS_WIDTH, CANVAS_HEIGHT)
 frame.set_draw_handler(interaction.draw)
