@@ -5,13 +5,50 @@ from user305_o32FtUyCKk_0 import Vector
 CANVAS_WIDTH = 600
 CANVAS_HEIGHT = 400
 
+class Wall:
+    def __init__(self, x, border, color, wall_pos):
+        self.x = x
+        self.border = border
+        self.color = color
+        self.normal = Vector(1,0)
+        
+        self.wall_pos = wall_pos
+        
+        self.edge_r = x + self.border
+
+    def draw(self, canvas):
+        canvas.draw_line((self.x, 0),
+                         (self.x, CANVAS_HEIGHT),
+                         self.border*2+1,
+                         self.color)
+
+    def hit(self, ball):
+        if self.wall_pos == "Left":
+            h = (ball.offset_l() <= self.edge_r)
+        
+        if self.wall_pos == "Right":
+            h = (ball.offset_l() >= self.edge_r)
+        return h
+
 
 class Ball:
-    def __init__(self, pos, vel, radius, color):
+    def __init__(self, pos, vel, radius, color,walls):
         self.pos = pos
         self.vel = vel
         self.radius = radius
         self.color = color
+        self.walls = walls
+        
+    def offset_l(self):
+        for wall in self.walls:
+            if wall.wall_pos == "Right":
+                return self.pos.x + self.radius
+
+            if wall.wall_pos == "Left":
+                return self.pos.x - self.radius
+        
+    def bounce(self, normal):
+        self.vel.reflect(normal)
         
     def update(self):
         self.pos.add(self.vel)
@@ -24,9 +61,12 @@ class Ball:
                            self.color)
         
 class Interaction:
-    def __init__(self, balls):
+    def __init__(self, balls,walls):
         self.balls = balls
         self.in_collision = set()
+        self.walls = walls
+        self.in_wall_collision = False
+        
         
     def hit(self, b1, b2):
         b1subb2 = b1.pos.copy().subtract(b2.pos)
@@ -40,10 +80,11 @@ class Interaction:
         perpendicular1 = b1.vel.copy().subtract(parallel1)
         parallel2 = b2.vel.get_proj(unit)
         perpendicular2 = b2.vel.copy().subtract(parallel2)
-        b1.vel=Vector(21,21)    
+         
         b1.vel = parallel2 + perpendicular1
         b2.vel = parallel1 + perpendicular2
-        
+        temp = b1.vel.get_p()
+   
     def collide(self, b1, b2):
         if self.hit(b1, b2):
             ball1Againstball2 = (b1, b2) in self.in_collision
@@ -58,10 +99,19 @@ class Interaction:
             self.in_collision.discard((b2, b1))
         
     def update(self):
+        
         for ball in self.balls:
             ball.update()
+            for wall in self.walls:
+                if wall.hit(ball):        
+                    if not self.in_wall_collision:
+                        ball.bounce(wall.normal)
+                        in_wall_collision = True
+                else:
+                    self.in_wall_collision = False
         
         for ball1 in self.balls:
+            
             for ball2 in self.balls:
                 if ball1 != ball2:
                     
@@ -69,6 +119,8 @@ class Interaction:
     
     def draw(self, canvas):
         self.update()
+        for wall in self.walls:
+            wall.draw(canvas)
         for ball in self.balls:
            
             
@@ -97,21 +149,22 @@ def rand_ball():
                 rand_vel(),
                 rand_rad(),
                 rand_col())
-    
-balls = [ Ball(Vector(300,200), Vector(3,2),20,'Green'),
-         Ball(Vector(0,200),Vector(0,0),20,'Red'),
-          Ball(Vector(600,200),Vector(0,0),20,'Red'),
-          Ball(Vector(300,100),Vector(0,0),20,'Red'),
-         Ball(Vector(500,300),Vector(0,0),20,'Pink'),
-         Ball(Vector(200,500),Vector(0,0),30,'Red'),
-         Ball(Vector(100,100),Vector(0,0),50,'Red'),
-         Ball(Vector(300,300),Vector(0,0),40,'Green'),
-         Ball(Vector(150,100),Vector(0,0),30,'Red'),
-         Ball(Vector(400,400),Vector(0,0),40,'Pink'),
-         Ball(Vector(450,400),Vector(0,0),10,'Pink'),
-        Ball(Vector(500,400),Vector(0,0),10,'Blue'),
-          Ball(Vector(540,300),Vector(0,0),20,'Pink'),]
-interaction = Interaction(balls)
+Walls = [Wall(CANVAS_WIDTH, 5, 'red',"Right"),Wall(0, 5, 'red',"Left")]
+
+balls = [ Ball(Vector(300,200), Vector(3,2),20,'Green', Walls),
+         Ball(Vector(0,200),Vector(0,0),20,'Red', Walls),
+          Ball(Vector(600,200),Vector(0,0),20,'Red',Walls),
+          Ball(Vector(300,100),Vector(0,0),20,'Red',Walls),
+         Ball(Vector(500,300),Vector(0,0),20,'Pink',Walls),
+         Ball(Vector(200,500),Vector(0,0),30,'Red',Walls),
+         Ball(Vector(100,100),Vector(0,0),50,'Red',Walls),
+         Ball(Vector(300,300),Vector(0,0),40,'Green',Walls),
+         Ball(Vector(150,100),Vector(0,0),30,'Red',Walls),
+         Ball(Vector(400,400),Vector(0,0),40,'Pink',Walls),
+         Ball(Vector(450,400),Vector(0,0),10,'Pink',Walls),
+        Ball(Vector(500,400),Vector(0,0),10,'Blue',Walls),
+          Ball(Vector(540,300),Vector(0,0),20,'Pink',Walls),]
+interaction = Interaction(balls,Walls)
 
 frame = simplegui.create_frame("Balls", CANVAS_WIDTH, CANVAS_HEIGHT)
 frame.set_draw_handler(interaction.draw)
