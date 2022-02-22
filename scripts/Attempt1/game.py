@@ -104,6 +104,7 @@ class Interaction:
         
         for ball in self.balls:
             ball.update()
+            ball.vel.multiply(0.99)
             for wall in self.walls:
                 if wall.hit(ball):        
                     if not self.in_wall_collision:
