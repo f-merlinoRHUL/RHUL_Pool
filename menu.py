@@ -26,9 +26,8 @@ def click(pos):
     global ball_pos, ball_color
     ball_pos = list(pos)
     ball_color = "Red"
-    if 500 < ball_pos[0] < 695:
-        if 215 < ball_pos[1] < 590:
-            print("Nice!")
+    if 500 < ball_pos[0] < 695 and 215 < ball_pos[1] < 590:
+        print("Nice!")
 
 
     
