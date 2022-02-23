@@ -44,9 +44,3 @@ def start():
     frame.start()
     
 start()
-
-        
-frame.set_mouseclick_handler(click)
-frame.set_draw_handler(draw)
-
-frame.start()
