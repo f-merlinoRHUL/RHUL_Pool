@@ -1,4 +1,8 @@
-import simplegui, math, codeskulptor
+try:
+    import simplegui
+except ImportError :
+    import SimpleGUICS2Pygame.simpleguics2pygame as simplegui
+import math
 
 WIDTH = 600*2
 HEIGHT = 400*2

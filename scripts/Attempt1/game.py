@@ -1,6 +1,9 @@
-
-import random, simplegui
-from user305_o32FtUyCKk_0 import Vector
+try:
+    import simplegui
+except ImportError :
+    import SimpleGUICS2Pygame.simpleguics2pygame as simplegui
+import random
+from vector import Vector
 
 
 CANVAS_WIDTH = 600
