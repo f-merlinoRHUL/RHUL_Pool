@@ -26,15 +26,21 @@ def click(pos):
     global ball_pos, ball_color
     ball_pos = list(pos)
     ball_color = "Red"
+    if 500 < ball_pos[0] < 695 and 215 < ball_pos[1] < 590:
+        print("Nice!")
 
+
+    
+    
 def draw(canvas):
     canvas.draw_image(b1.background, (1440/2, 900/2), (1440, 900), (300*2, 200*2), (600*2, 400*2))
     canvas.draw_circle(ball_pos, BALL_RADIUS, 1, "Black", ball_color)
+
     
-frame = simplegui.create_frame("Main Menu", WIDTH, HEIGHT)
-
-        
-frame.set_mouseclick_handler(click)
-frame.set_draw_handler(draw)
-
-frame.start()
+def start():
+    frame = simplegui.create_frame("Main Menu", WIDTH, HEIGHT)
+    frame.set_mouseclick_handler(click)
+    frame.set_draw_handler(draw)
+    frame.start()
+    
+start()
