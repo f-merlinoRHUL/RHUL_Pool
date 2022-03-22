@@ -1,0 +1,401 @@
+
+import random, simplegui
+from user305_o32FtUyCKk_0 import Vector
+import math
+
+CANVAS_WIDTH = 600*1.5
+CANVAS_HEIGHT = 400*1.5
+
+class Socket:
+    def __init__(self,pos):
+        self.pos = pos
+        self.radius = 5
+    
+    def draw(self,canvas):
+        canvas.draw_circle(self.pos.get_p(), self.radius, 11,"black", "black")
+
+class Cue:
+    def __init__(self):
+        self.position=(CANVAS_WIDTH/2,CANVAS_HEIGHT/2)
+        self.image=simplegui.load_image("https://cdn.discordapp.com/attachments/924666168399257612/944362796982886410/Cue_2.png")
+        self.angle=0
+        self.strength_x=0
+        self.strength_y=0
+        self.dragging=False
+        self.count=0
+        self.rotateUp_bool=False
+        self.rotateDown_bool=False
+        #self.last_pos=self.position
+    def click(self,pos):
+        
+        if self.dragging == True:
+            self.dragging=False
+        else:
+            self.angle=0
+            pos=(pos[0]-170,pos[1])
+            self.position=pos
+    def drag(self,pos):
+        self.dragging=True
+        if self.position[1]>pos[1]:
+            self.angle-=0.1
+        elif self.position[1]<pos[1]:
+            self.angle+=0.1
+        #self.angle=math.atan(pos[1]/pos[0])
+        print(self.angle)
+    def rotateDown(self):
+        if self.rotateDown_bool==True:
+            self.angle-=0.03
+    def rotateUp(self):
+        if self.rotateUp_bool==True:
+            self.angle+=0.03
+        #print(self.angle)
+    def draw(self,canvas):
+        self.power()
+        self.rotateUp()
+        self.rotateDown()
+        #self.last_pos=self.position
+        canvas.draw_image(self.image,(2992/2,50),(2991,100),self.position, (400, 14),self.angle)
+    def keydown(self,key):
+        if key==simplegui.KEY_MAP['down']:
+            self.rotateDown_bool=True
+        if key==simplegui.KEY_MAP['up']:
+            self.rotateUp_bool=True
+        if key==simplegui.KEY_MAP['space']:
+            self.count=0
+            #print(self.angle)
+            self.strength_y=270*math.sin(self.angle)
+            self.strength_x=(270**2-self.strength_y**2)**(1/2)
+            self.strength_y=self.strength_y/40
+            self.strength_x=self.strength_x/40
+
+            
+            print(f"({self.strength_x},{self.strength_y})")
+    def keyup(self,key):
+        if key==simplegui.KEY_MAP['down']:
+            self.rotateDown_bool=False
+        elif key==simplegui.KEY_MAP['up']:
+            self.rotateUp_bool=False
+    def power(self):
+        self.count+=1
+        if self.count>10:
+            self.strength_x=0
+            self.strength_y=0
+            self.count=0
+        #print(self.position)
+        #print(self.angle)
+        self.position=(self.position[0]+self.strength_x,self.position[1]+self.strength_y)
+        
+class Wall:
+    def __init__(self, x, border, color, wall_pos):
+        self.x = x
+        self.border = border
+        self.color = color
+        self.normal = Vector(1,0)
+        
+        self.wall_pos = wall_pos
+    
+        
+        self.edge_r = x + self.border
+
+    def draw(self, canvas):
+        canvas.draw_line((self.x, 180),
+                         (self.x, CANVAS_HEIGHT-125),
+                         self.border*2+1,
+                         self.color)
+
+    def rightHit(self, ball):
+        
+        if self.wall_pos == "Right":
+            
+            h = (ball.rightOffset_l() >= self.edge_r)
+        return h
+    
+    def leftHit(self,ball):
+        if self.wall_pos == "Left":
+            h = (ball.leftOffset_l() <= self.edge_r)
+        return h
+    
+class Horizontal_Walls:
+        def __init__(self, y,x1,x2, border, color, wall_pos):
+            self.y = y
+            
+            self.x1 = x1
+            self.x2=x2
+            self.border = border
+            self.color = color
+            self.normal = Vector(0,1)
+            
+            self.wall_pos = wall_pos
+
+            self.edge_r = self.y + self.border
+
+        def draw(self, canvas):
+            canvas.draw_line((self.x1, self.y),
+                             (self.x2, self.y),
+                             self.border*2+1,
+                             self.color)
+
+            
+            
+
+        
+        def upHit(self, ball):
+            h = False
+            if self.wall_pos =="Up":
+                h = (ball.up_h_offset_l() <= self.edge_r)
+            return h
+        
+        def downHit(self, ball):
+            h = False
+            if self.wall_pos == "Down":
+                h = (ball.down_h_offset_l() >= self.edge_r)
+            return h
+    
+
+
+class Ball:
+    def __init__(self, pos, vel, radius, color,walls,h_walls):
+        self.pos = pos
+        self.vel = vel
+        self.radius = radius
+        self.color = color
+        self.walls = walls
+        self.h_walls = h_walls
+        
+    def rightOffset_l(self):
+        return self.pos.x + self.radius
+            
+    def leftOffset_l(self):
+        return self.pos.x - self.radius
+    
+    def up_h_offset_l(self):
+        return self.pos.y - self.radius
+    
+    def down_h_offset_l(self):
+        return self.pos.y + self.radius
+        
+
+        
+    def bounce(self, normal):
+        self.vel.reflect(normal)
+        
+    def Leftbounce(self, normal):
+        self.vel.reflect(normal)
+    
+
+        
+    def update(self):
+        self.pos.add(self.vel)
+        
+    def draw(self, canvas):
+        canvas.draw_circle(self.pos.get_p(),
+                           self.radius,
+                           1,
+                           self.color,
+                           self.color)
+        
+class Interaction:
+    def __init__(self, balls,walls,H_Walls, background_image, sockets):
+        self.balls = balls
+        self.to_remove_list = []
+        
+        self.in_collision = set()
+      
+        self.walls = walls
+        self.h_walls = H_Walls
+        self.in_wall_collision = False
+        self.h_in_wall_collision = False
+        self.background_image = simplegui.load_image(background_image)
+        self.sockets = sockets
+        
+        
+    def hit(self, b1, b2):
+        b1subb2 = b1.pos.copy().subtract(b2.pos)
+        return b1subb2.length() < b1.radius + b2.radius
+    
+    def do_bounce(self, b1, b2):
+        b1subb2 = b1.pos.copy().subtract(b2.pos)
+       
+        unit = b1subb2.copy().normalize()
+        parallel1 = b1.vel.get_proj(unit)
+        perpendicular1 = b1.vel.copy().subtract(parallel1)
+        parallel2 = b2.vel.get_proj(unit)
+        perpendicular2 = b2.vel.copy().subtract(parallel2)
+         
+        b1.vel = parallel2 + perpendicular1
+        b2.vel = parallel1 + perpendicular2
+        temp = b1.vel.get_p()
+   
+    def collide(self, b1, b2):
+        if self.hit(b1, b2):
+            ball1Againstball2 = (b1, b2) in self.in_collision
+            ball2Againstball1 = (b2, b1) in self.in_collision
+           
+            if not ball1Againstball2 and not ball2Againstball1:
+                self.do_bounce(b1, b2)
+                
+                self.in_collision.add((b1, b2))
+        else:
+            self.in_collision.discard((b1, b2))
+            self.in_collision.discard((b2, b1))
+            
+    def remove_ball(self,ball):
+        self.to_remove_list.append(ball)
+        for i in self.to_remove_list:
+            if i in self.balls:
+                self.balls.remove(i)
+                self.to_remove_list.remove(i)
+                
+    def socketed(self, b1, b2, socket):
+        if self.hit(socket,b1):
+            
+            self.remove_ball(b1)
+        
+ 
+    def update(self):
+        
+        for ball in self.balls:
+            ball.update()
+            ball.vel.multiply(0.99)
+  
+            
+            if self.walls[0].rightHit(ball):
+                ball.bounce(self.walls[0].normal)
+                
+            if self.walls[1].leftHit(ball):
+                ball.bounce(self.walls[1].normal)
+                
+            if self.h_walls[0].upHit(ball):
+                 ball.bounce(self.h_walls[0].normal)
+            
+            if self.h_walls[1].upHit(ball):
+
+                 print("Up")
+                     
+              
+            if self.h_walls[2].downHit(ball):
+                ball.bounce(self.h_walls[0].normal)
+                print("downRight")                
+                
+            if self.h_walls[3].downHit(ball):
+                print("downLeft")
+                
+            
+            """
+            for wall in self.walls:
+               
+                if wall.hit(ball):        
+                    if not self.in_wall_collision:
+                        ball.bounce(wall.normal)
+                        in_wall_collision = True
+                else:
+                    self.in_wall_collision = False
+                    
+            for h_wall in self.H_Walls:
+                if h_wall.hit(ball):        
+                    if not self.h_in_wall_collision:
+                        ball.bounce(h_wall.normal)
+                       
+                        h_in_wall_collision = True
+                else:
+                    self.h_in_wall_collision = False
+            """
+        
+        for socket in self.sockets:
+            for ball1 in self.balls:
+                self.socketed(ball1,ball1,socket)
+                
+        for ball1 in self.balls:
+            
+            for ball2 in self.balls:
+                if ball1 != ball2:
+                    
+                    self.collide(ball1, ball2)
+    
+    def draw(self, canvas):
+        self.update()
+        canvas.draw_image(self.background_image, (1440/2, 900/2), (1440, 900), (CANVAS_WIDTH/2, CANVAS_HEIGHT/2), (CANVAS_WIDTH, CANVAS_HEIGHT))
+        for socket in self.sockets:
+            socket.draw(canvas)
+        for wall in self.walls:
+            wall.draw(canvas)
+            
+        for h_walls in self.h_walls:    
+            h_walls.draw(canvas)
+            
+        for ball in self.balls:
+            ball.draw(canvas)
+        cue.draw(canvas)
+        
+        
+                             
+                           
+        
+def rand_col():
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
+    return "rgb({}, {}, {})".format(r, g, b)
+       
+def rand_pos():
+    return Vector(random.randint(0, CANVAS_WIDTH),
+                  random.randint(0, CANVAS_HEIGHT))
+
+def rand_rad():
+    return (random.randint(10,30))
+
+def rand_vel():
+    return Vector(random.randint(-5, 5),
+                 random.randint(-5, 5))
+
+
+def rand_ball():
+    return Ball(rand_pos(),
+                rand_vel(),
+                rand_rad(),
+                rand_col())
+
+
+background_image = "https://cdn.discordapp.com/attachments/807030208557350952/952975310188580984/8_Pool_Table.png"
+
+
+Walls = [Wall(CANVAS_WIDTH -123.1, 0.1, 'red',"Right"),Wall(122, 0.1, 'red',"Left")]
+
+H_Walls = [Horizontal_Walls(CANVAS_HEIGHT-447,148,432, 0.1, 'red',"Up"),
+          Horizontal_Walls(CANVAS_HEIGHT-447,468,752, 0.1, 'red',"Up"),
+          Horizontal_Walls(CANVAS_HEIGHT-100,468,752, 0.1, 'Blue',"Down"),
+          Horizontal_Walls(CANVAS_HEIGHT-100,148,432, 0.1, 'Blue',"Down")]
+
+
+move_x = 290
+move_y = 130
+balls = [Ball(Vector(100+ move_x,200+ move_y), Vector(20,20),10,'White', Walls,H_Walls),
+         Ball(Vector(360 + move_x,200 + move_y),Vector(0,0),10,'Yellow', Walls,H_Walls),
+         Ball(Vector(381+ move_x,210+ move_y),Vector(0,0),10,'Red',Walls,H_Walls),
+         Ball(Vector(381+ move_x,189.25+ move_y),Vector(0,0),10,'Blue',Walls,H_Walls),
+         Ball(Vector(403+ move_x, 221+ move_y),Vector(0,0),10,'Green',Walls,H_Walls),
+         Ball(Vector(403+ move_x,200+ move_y),Vector(0,0),10,'Orange',Walls,H_Walls),
+         Ball(Vector(403+ move_x,179+ move_y),Vector(0,0),10,'Purple',Walls,H_Walls),
+         Ball(Vector(424.5+ move_x,208+ move_y),Vector(0,0),10,'Red',Walls,H_Walls),
+         Ball(Vector(424.5+ move_x,229+ move_y),Vector(0,0),10,'Blue',Walls,H_Walls),
+         Ball(Vector(424.5+ move_x,187+ move_y),Vector(0,0),10,'Black',Walls,H_Walls),
+         Ball(Vector(424.5+ move_x,166+ move_y),Vector(0,0),10,'Pink',Walls,H_Walls),
+         Ball(Vector(446+ move_x, 197.5+ move_y),Vector(0,0),10,'Orange',Walls,H_Walls),
+         Ball(Vector(446+ move_x, 218.5+ move_y),Vector(0,0),10,'Green',Walls,H_Walls),
+         Ball(Vector(446+ move_x, 239.5+ move_y),Vector(0,0),10,'Red',Walls,H_Walls),
+         Ball(Vector(446+ move_x,176.5+ move_y),Vector(0,0),10,'Purple',Walls,H_Walls),
+         Ball(Vector(446+ move_x,155.5+ move_y),Vector(0,0),10,'Red',Walls,H_Walls),]
+
+sockets = [Socket(Vector(775,145)), Socket(Vector(120,145)), Socket(Vector(450,140)),
+           Socket(Vector(775,510)),  Socket(Vector(120,510)) , Socket(Vector(450,510))]
+
+interaction = Interaction(balls,Walls,H_Walls, background_image,sockets)
+cue=Cue()
+frame = simplegui.create_frame("Balls", CANVAS_WIDTH, CANVAS_HEIGHT)
+
+frame.set_keydown_handler(cue.keydown)
+frame.set_keyup_handler(cue.keyup)
+frame.set_draw_handler(interaction.draw)
+frame.set_mouseclick_handler(cue.click)
+frame.set_mousedrag_handler(cue.drag)
+frame.start()
